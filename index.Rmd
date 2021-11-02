@@ -19,72 +19,125 @@ tidy=TRUE, tidy.opts=list(width.cutoff=60), R.options=list(max.print=100))
 
 ## Data Wrangling, Exploration, Visualization
 
-### Name and EID here
+### Jessica de Jong JLD4864
 
 #### Introduction 
 
-Paragraph or two introducing your datasets and variables, why they are interesting to you, etc.
+For this project, I chose two data-sets to combine and explore: One data-set shows data on suicide rates by country, among other variables like age, population number, sex, year, and generation. The other data-set shows income of countries by year, also including the variables of region and income group. These two datasets share the ID variables of country and year. I chose these two because I thought it would be interesting to see if there was correlation between income and suicide rates by country - for example, could the United States have lower suicide rates than a lower income country, like Guinea? I would predict that in countries that suffer from poverty, suicide rates would be higher.
 
 ```{R}
-# read your datasets in here, e.g., with read_csv()
-
+#reading in my data-sets
+library(tidyverse)
+data1 <- read_csv("suiciderates.csv")
+data2 <- read_csv("incomebycountry.csv")
 ```
 
 #### Tidying: Reshaping
 
-If your datasets are tidy already, demonstrate that you can reshape data with pivot wider/longer here (e.g., untidy and then retidy). Alternatively, it may be easier to wait until the wrangling section so you can reshape your summary statistics. Note here if you are going to do this.
-
 ```{R}
-# your tidying code (if applicable; can also wait until wrangling section)
+#my tidying code:
+untidydata1 <- data1 %>% pivot_wider(names_from = generation, values_from = age)
+
+tidydata1 <- untidydata1 %>% pivot_longer(cols = c("Silent", "G.I. Generation", "Boomers", "Generation X", "Millenials", "Generation Z"), names_to = "generation", values_to = "age", values_drop_na = TRUE)
+
+tidydata1 <- tidydata1 %>% mutate(year = as.numeric(year))
+
+tidydata2 <- data2 %>% pivot_longer(cols=c(starts_with("19"), starts_with("20")), names_to = "year", values_to = "Average_Income", values_drop_na = TRUE)
+
+tidydata2 <- tidydata2 %>% mutate(year = as.numeric(year))
 ```
+My first data-set of suicide rates was already tidy. I untidied the data-set by using the pivot_wider function and removing the generation names, and then tidied the data-set back by using the pivot_longer function and re-adding the generation names. My second data-set was not tidy in regard to the years being displayed, so I used the pivot_longer function to grab any values that began with 19 and 20 (e.g. the years 1987 - 2020). I also included the mutate function here on both tidy data-sets in order for the resulting combined data-sets to be acknowledged as numeric data later on in the wrangling portion of this project.
 
     
 #### Joining/Merging
 
 ```{R}
-# your joining code
+#my joining code:
+joinedData <- full_join(tidydata1, tidydata2)
 
-# your joining code
+joinData <- joinedData %>% mutate(population = as.numeric(population), Average_Income = as.numeric(Average_Income))
+
+count(tidydata1)
+count(tidydata2)
+count(joinData)
 ```
 
-Discussions of joining here. Feel encouraged to break up into more than once code chunk and discuss each in turn.
+To join both of my data-sets, I used the full_join function. This made sense in my case, as I will be using the dplyr functions to create summary statistics for most of the variables in my combined data-set: all of these variables are worth exploring! Therefore, there are no observations that have been dropped. There were 27,817 observations in my first data-set, and 7,378 observations in my second data-set. In my combined dataset, there are a total of 33,122 observations. 
 
 ####  Wrangling
 
 ```{R}
-# your wrangling code
+#my wrangling code
+#create a new variable with mutate function
+mutateJoinedData <- joinData %>% mutate(EstimatedGDPforGeneration = as.numeric(population) * as.numeric(Average_Income), EstimatedGDPforGeneration = as.numeric(EstimatedGDPforGeneration))
 
-# your wrangling code
+#use stringr function
+mutateJoinedData %>% filter(str_detect('Income Group', "Low.*")) %>% arrange(population)
 
-# your wrangling code
+#summary statistics
+mutateJoinedData %>% arrange(desc("suicides_no")) %>% glimpse()
+
+mutateJoinedData %>% select("Country", "generation", "suicides_no", "suicides_per_100k_pop", "Average_Income")
+
+mutateJoinedData %>% filter(generation == "Silent") %>% filter(year == 2015) %>% filter(is.na(Average_Income) == FALSE) %>% group_by(Country,'Income Group') %>% summarize(Average_Income = mean(Average_Income))
+
+mutateJoinedData %>% filter(generation == "Silent") %>% filter(year == 2015) %>% filter(is.na(Average_Income) == FALSE) %>% group_by(Country, 'Income group') %>% summarize(MedianSuicide = median(suicides_no))
+
+#hello???
+mutateJoinedData %>% filter(generation == "Silent") %>% filter(year == 
+    2015) %>% filter(is.na(Average_Income) == FALSE) %>% summarize(NDistinctSuicidesPer100kPop = n_distinct(suicides_per_100k_pop))
+
+mutateJoinedData %>% filter(generation == "Silent") %>% filter(year == 2015) %>% filter(is.na(Average_Income) == FALSE) %>% group_by(Country,'Income group') %>% summarize(minEstimatedGDPforGeneration = min(EstimatedGDPforGeneration))
+
+mutateJoinedData %>% filter(generation == "Silent") %>% filter(year == 2015) %>% filter(is.na(Average_Income) == FALSE) %>% group_by(Country, 'Income group') %>% summarize(maxEstimatedGDPforGeneration = max(EstimatedGDPforGeneration))
+
+mutateJoinedData %>% filter(generation == "Silent") %>% filter(year == 2015) %>% filter(is.na(Average_Income) == FALSE) %>% group_by(Country, 'Income group') %>% summarize(n())
+
+
+mutateJoinedData %>% filter(generation == "Silent") %>% filter(year == 2015) %>% filter(is.na(Average_Income) == FALSE) %>% group_by(Country, 'Income group') %>% summarize(StandardEstimatedGDPforGeneration = sd(EstimatedGDPforGeneration))
+
+myownfunction <- function(x) (x-mean(x))
+mutateJoinedData %>% filter(generation == "Silent") %>% filter(year == 2015) %>% filter(is.na(Average_Income == FALSE)) %>% group_by(Country,'Income group') %>% summarize(MeanCenteredPop = myownfunction(population))
+
+
+statstable <- mutateJoinedData %>% group_by('Income group', generation) %>% summarize(n())
+
+#install.packages('gt')
+library("gt")
+
+statstable %>% pivot_wider(names_from = generation, values_from = 'n()') %>% gt() %>% tab_header(title = "Income per Generation")
 ```
 
-Your discussion of wrangling section here. Feel encouraged to break up into more than once code chunk and discuss each in turn.
-
+To create a generated variable, I used the mutate function - this variable was the Estimated GDP for generation. I did this by multiplying the variables of population by the variable of Average_Income. With the stringr function, I arranged the variable of population by income group by only low and low middle class income groups. For most of my summary statistics of my combined data, I filtered for the Silent generation and the year 2015 to zero-in on a certain part of my data, also grouping by country. With these filters in mind, I calculated the mean average income, the median suicide number, the distinct suicides per 100,000 people, the minimum, maximum, and standard deviation GDP for the Silent generation. What I found interesting was the countries with the highest median suicide rates were Japan and the United States - this goes against my initial prediction of higher income countries having lower suicide rates. 
 
 #### Visualizing
 
 ```{R}
-# your plot 1
+#my plot 1: Suicides by Income Group
+ggplot(mutateJoinedData, aes(`Income group`, suicides_per_100k_pop, fill = `Income group`)) + geom_bar(stat = "summary") + theme(text = element_text(size = 2)) + theme_bw() + scale_y_continuous(n.breaks = 10) + xlab("Income Group") + ylab("Suicides per 100k Population") + ggtitle("Suicides by Income Group")
+       
 ```
-
-Your discussion of plot 1
+Countries with the highest income group have higher rates of suicide - this goes against my initial prediction noted in my introduction. I assumed that because of stress among people in poverty-stricken areas, suicide rates in lower income countries would be higher. 
 
 ```{R}
-# your plot 2
+#my plot 2: Suicidie by Sex
+ggplot(mutateJoinedData, aes(sex, suicides_per_100k_pop, fill = sex)) + geom_bar(stat = "summary") + geom_violin() + theme_bw() + scale_y_continuous(n.breaks = 10)+ xlab("Sex") + ylab("Suicides per 100k Population") + ggtitle("Suicides by Sex")
+       
 ```
 
-Your discussion of plot 2
+In this plot, we can see that suicide rates for males is much higher than for that of females. The violin structure of the male bar also rides up higher, indicating that there is also a higher variance among males. Considering a similar viewpoint from before (in terms of money), I could understand how this data could make sense: perhaps due to societal roles and men primarily being seen as "breadwinners" of the family, there may be more pressure on men to perform well financially. 
 
 ```{R}
-# your plot 3
+# my plot 3: Suicides per Average Income
+ggplot(mutateJoinedData, aes(Average_Income, suicides_per_100k_pop)) + geom_point() + geom_smooth(method = "loess") + scale_x_continuous((limits = c(0, 150000)))+ xlab("Average Income") + ylab("Suicides per 100k Population") + ggtitle("Suicides by Average Income")
+       
 ```
 
-Your discussion of plot 3
+In this plot, we see some contradicting data - it looks as though that countries with a lower average income have higher suicide rates. This rivals my first plot, which demonstrates that people in countries with a high income are more likely to commit suicide. This could be because these are average values. 
 
 #### Concluding Remarks
 
-If any!
+Considering the first plot created, I find it interesting that countries with a high income could have higher suicide rates. One thing I can consider
 
 
 
