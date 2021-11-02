@@ -46,6 +46,7 @@ tidydata2 <- data2 %>% pivot_longer(cols=c(starts_with("19"), starts_with("20"))
 
 tidydata2 <- tidydata2 %>% mutate(year = as.numeric(year))
 ```
+
 My first data-set of suicide rates was already tidy. I untidied the data-set by using the pivot_wider function and removing the generation names, and then tidied the data-set back by using the pivot_longer function and re-adding the generation names. My second data-set was not tidy in regard to the years being displayed, so I used the pivot_longer function to grab any values that began with 19 and 20 (e.g. the years 1987 - 2020). I also included the mutate function here on both tidy data-sets in order for the resulting combined data-sets to be acknowledged as numeric data later on in the wrangling portion of this project.
 
     
@@ -83,7 +84,6 @@ mutateJoinedData %>% filter(generation == "Silent") %>% filter(year == 2015) %>%
 
 mutateJoinedData %>% filter(generation == "Silent") %>% filter(year == 2015) %>% filter(is.na(Average_Income) == FALSE) %>% group_by(Country, 'Income group') %>% summarize(MedianSuicide = median(suicides_no))
 
-#hello???
 mutateJoinedData %>% filter(generation == "Silent") %>% filter(year == 
     2015) %>% filter(is.na(Average_Income) == FALSE) %>% summarize(NDistinctSuicidesPer100kPop = n_distinct(suicides_per_100k_pop))
 
@@ -114,8 +114,8 @@ To create a generated variable, I used the mutate function - this variable was t
 
 ```{R}
 #my plot 1: Suicides by Income Group
-ggplot(mutateJoinedData, aes(`Income group`, suicides_per_100k_pop, fill = `Income group`)) + geom_bar(stat = "summary") + theme(text = element_text(size = 2)) + theme_bw() + scale_y_continuous(n.breaks = 10) + xlab("Income Group") + ylab("Suicides per 100k Population") + ggtitle("Suicides by Income Group")
-       
+
+ggplot(mutateJoinedData, aes(`Income group`, suicides_per_100k_pop, fill = `Income group`)) + geom_bar(stat = "summary") + theme(text = element_text(size = 2)) + theme_bw() + scale_y_continuous(n.breaks = 10) + xlab("Income Group") + ylab("Suicides per 100k Population") + ggtitle("Suicides by Income Group") + geom_violin()
 ```
 Countries with the highest income group have higher rates of suicide - this goes against my initial prediction noted in my introduction. I assumed that because of stress among people in poverty-stricken areas, suicide rates in lower income countries would be higher. 
 
@@ -137,7 +137,7 @@ In this plot, we see some contradicting data - it looks as though that countries
 
 #### Concluding Remarks
 
-Considering the first plot created, I find it interesting that countries with a high income could have higher suicide rates. One thing I can consider
+Considering the first plot created, I find it interesting that countries with a high income could have higher suicide rates. One thing I can consider to make sense out of this is the social technology that high income countries have: like social media. I wonder if this could be of negative influence to the population of high income countries.
 
 
 
